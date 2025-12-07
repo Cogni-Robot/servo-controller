@@ -1,0 +1,19 @@
+[package]
+name = "servo-controller"
+version = "0.1.0"
+edition = "2024"
+authors = ["NotPunchnox"]
+description = "A Rust library for controlling ST3215 servos"
+license = "MIT"
+
+[dependencies]
+serialport = "4.3"
+thiserror = "2.0.17"
+
+[lib]
+name = "st3215"
+path = "src/lib.rs"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"

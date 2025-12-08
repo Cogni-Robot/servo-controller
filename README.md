@@ -211,13 +211,13 @@ Pour activer les logs de débogage :
 RUST_LOG=debug cargo run
 ```
 
-## 📄 Licence
+## Licence
 MIT
 
-## 👥 Auteurs
+## Auteurs
 NotPunchnox
 
-## 🔗 Liens
+## Liens
 
 - Repository: https://github.com/Cogni-Robot/servo-controller
 - Issues: https://github.com/Cogni-Robot/servo-controller/issues

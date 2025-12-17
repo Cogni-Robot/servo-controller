@@ -20,7 +20,7 @@ pub struct ST3215Handle {
 ///
 /// # Retour
 /// Un pointeur vers ST3215Handle, ou NULL en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_new(device: *const c_char) -> *mut ST3215Handle {
     if device.is_null() {
         return ptr::null_mut();
@@ -43,7 +43,7 @@ pub extern "C" fn st3215_new(device: *const c_char) -> *mut ST3215Handle {
 ///
 /// # Arguments
 /// * `handle` - Handle ST3215 à libérer
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_free(handle: *mut ST3215Handle) {
     if !handle.is_null() {
         unsafe {
@@ -60,7 +60,7 @@ pub extern "C" fn st3215_free(handle: *mut ST3215Handle) {
 ///
 /// # Retour
 /// 1 si le servo répond, 0 sinon
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_ping_servo(handle: *mut ST3215Handle, servo_id: u8) -> i32 {
     if handle.is_null() {
         return 0;
@@ -83,7 +83,7 @@ pub extern "C" fn st3215_ping_servo(handle: *mut ST3215Handle, servo_id: u8) -> 
 ///
 /// # Retour
 /// Nombre de servos trouvés
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_list_servos(
     handle: *mut ST3215Handle,
     out_ids: *mut u8,
@@ -116,7 +116,7 @@ pub extern "C" fn st3215_list_servos(
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_move_to(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -129,9 +129,9 @@ pub extern "C" fn st3215_move_to(
     }
 
     let st = unsafe { &(*handle).inner };
-    match st.move_servo_to(servo_id, position, speed, acceleration) {
-        Ok(_) => 0,
-        Err(_) => -1,
+    match st.move_to(servo_id, position, speed, acceleration, false) {
+        Some(_) => 0,
+        None => -1,
     }
 }
 
@@ -144,7 +144,7 @@ pub extern "C" fn st3215_move_to(
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_read_position(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -155,7 +155,7 @@ pub extern "C" fn st3215_read_position(
     }
 
     let st = unsafe { &(*handle).inner };
-    match st.read_current_position(servo_id) {
+    match st.read_position(servo_id) {
         Some(pos) => {
             unsafe {
                 *out_position = pos;
@@ -175,7 +175,7 @@ pub extern "C" fn st3215_read_position(
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_read_speed(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -186,10 +186,10 @@ pub extern "C" fn st3215_read_speed(
     }
 
     let st = unsafe { &(*handle).inner };
-    match st.read_current_speed(servo_id) {
+    match st.read_speed(servo_id) {
         Some(speed) => {
             unsafe {
-                *out_speed = speed;
+                *out_speed = speed.abs() as u16;
             }
             0
         }
@@ -206,7 +206,7 @@ pub extern "C" fn st3215_read_speed(
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_read_load(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -237,7 +237,7 @@ pub extern "C" fn st3215_read_load(
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_read_voltage(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -268,7 +268,7 @@ pub extern "C" fn st3215_read_voltage(
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_read_current(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -299,7 +299,7 @@ pub extern "C" fn st3215_read_current(
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_read_temperature(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -329,7 +329,7 @@ pub extern "C" fn st3215_read_temperature(
 ///
 /// # Retour
 /// 1 si en mouvement, 0 si arrêté, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_is_moving(handle: *mut ST3215Handle, servo_id: u8) -> i32 {
     if handle.is_null() {
         return -1;
@@ -352,7 +352,7 @@ pub extern "C" fn st3215_is_moving(handle: *mut ST3215Handle, servo_id: u8) -> i
 ///
 /// # Retour
 /// 0 en cas de succès, -1 en cas d'erreur
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_enable_torque(
     handle: *mut ST3215Handle,
     servo_id: u8,
@@ -363,7 +363,12 @@ pub extern "C" fn st3215_enable_torque(
     }
 
     let st = unsafe { &(*handle).inner };
-    match st.enable_torque(servo_id, enable != 0) {
+    let result = if enable != 0 {
+        st.start_servo(servo_id)
+    } else {
+        st.stop_servo(servo_id).map(|_| ()).ok_or_else(|| "Failed to stop servo".to_string())
+    };
+    match result {
         Ok(_) => 0,
         Err(_) => -1,
     }
@@ -373,7 +378,7 @@ pub extern "C" fn st3215_enable_torque(
 ///
 /// # Retour
 /// Chaîne de caractères contenant la version (doit être libérée avec st3215_free_string)
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_version() -> *mut c_char {
     let version = env!("CARGO_PKG_VERSION");
     match CString::new(version) {
@@ -386,7 +391,7 @@ pub extern "C" fn st3215_version() -> *mut c_char {
 ///
 /// # Arguments
 /// * `s` - Pointeur vers la chaîne à libérer
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn st3215_free_string(s: *mut c_char) {
     if !s.is_null() {
         unsafe {

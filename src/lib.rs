@@ -9,6 +9,7 @@ mod protocol_packet_handler;
 mod group_sync_write;
 mod group_sync_read;
 mod st3215;
+pub mod ffi;
 
 pub use values::*;
 pub use port_handler::PortHandler;

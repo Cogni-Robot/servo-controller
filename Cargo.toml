@@ -10,9 +10,13 @@ license = "MIT"
 serialport = "4.3"
 thiserror = "2.0.17"
 
+[build-dependencies]
+cbindgen = "0.29.2"
+
 [lib]
 name = "st3215"
 path = "src/lib.rs"
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [[example]]
 name = "basic"

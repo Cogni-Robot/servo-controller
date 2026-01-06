@@ -1,10 +1,15 @@
 [package]
-name = "servo-controller"
+name = "sts3215-controller"
 version = "0.1.0"
 edition = "2024"
 authors = ["NotPunchnox"]
 description = "A Rust library for controlling ST3215 servos"
 license = "MIT"
+repository = "https://github.com/Cogni-Robot/servo-controller"
+homepage = "https://github.com/Cogni-Robot/servo-controller"
+readme = "README.md"
+keywords = ["servo", "robotics", "sts3215", "feetech", "embedded"]
+categories = ["embedded", "hardware-support"]
 
 [dependencies]
 serialport = "4.3"

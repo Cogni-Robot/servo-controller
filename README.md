@@ -1,14 +1,25 @@
-# Servo Controller - ST3215
+# ST3215 Servo Controller
 
-Bibliothèque Rust pour contrôler les servomoteurs ST3215 via communication série.
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Ce projet a été écrit en Rust pour bénéficier de :
-- **Performance** : Compilation native et optimisations
-- **Sécurité** : Gestion mémoire sûre et système de types robuste
-- **Concurrence** : Support natif du multithreading sécurisé
-- **Fiabilité** : Détection des erreurs à la compilation
+Bibliothèque Rust complète pour contrôler les servomoteurs ST3215 via communication série. Cette bibliothèque offre une interface simple et sûre pour gérer tous les aspects des servos ST3215.
+
+## Caractéristiques
+
+- **API Rust complète** - Interface type-safe et ergonomique
+- **Bindings C/C++** - Utilisation depuis C++ via FFI
+- **Multi-plateforme** - Windows, Linux, macOS
+- **Communication série optimisée** - Support de multiples ports
+- **Gestion du torque** - Activation/désactivation précise
+- **Multiples modes** - Position, vitesse, PWM, pas-à-pas
+- **Lecture des capteurs** - Tension, courant, température, charge
+- **Étalonnage automatique** - Détection des limites min/max
+- **Thread-safe** - Utilisation sécurisée en multi-threading
 
 ## Installation
+
+### Depuis Cargo
 
 Ajoutez cette dépendance dans votre `Cargo.toml` :
 
@@ -17,207 +28,1000 @@ Ajoutez cette dépendance dans votre `Cargo.toml` :
 st3215 = { path = "." }
 ```
 
-Ou clonez le dépôt :
+### Depuis Git
 
 ```bash
 git clone https://github.com/Cogni-Robot/servo-controller
 cd servo-controller
+cargo build --release
 ```
 
-## Utilisation
-
-### Exemple basique
+## Démarrage rapide
 
 ```rust
 use st3215::ST3215;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), String> {
     // Connexion au port série
-    let servo = ST3215::new("COM3")?;
-
-    // Lister tous les servos
-    let ids = servo.list_servos();
-    println!("Servos trouvés: {:?}", ids);
-
-    // Déplacer un servo vers la position 2048
-    for id in ids {
-        servo.move_to(id, 2048, 2400, 50, false);
-    }
-
+    let controller = ST3215::new("/dev/ttyUSB0")?;
+    
+    // Lister tous les servos connectés
+    let servos = controller.list_servos();
+    println!("Servos trouvés: {:?}", servos);
+    
+    // Contrôler un servo
+    let servo_id = 1;
+    controller.enable_torque(servo_id)?;
+    controller.move_to(servo_id, 2048, 2400, 50, false);
+    
     Ok(())
 }
 ```
 
-### Compilation et exécution
+## Documentation complète
 
-```bash
-# Compiler le projet
-cargo build --release
+### Table des matières
 
-# Exécuter l'exemple principal
-cargo run --release
+- [Initialisation](#initialisation)
+- [Détection et connexion](#détection-et-connexion)
+- [Contrôle du torque](#contrôle-du-torque)
+- [Contrôle de position](#contrôle-de-position)
+- [Contrôle de vitesse](#contrôle-de-vitesse)
+- [Lecture des capteurs](#lecture-des-capteurs)
+- [Configuration avancée](#configuration-avancée)
+- [Étalonnage](#étalonnage)
+- [Exemples](#exemples)
 
-# Exécuter l'exemple basique
-cargo run --example basic --release
-```
+---
 
-## API Principale
+## Initialisation
 
-### Création et connexion
+### `new(device: &str) -> Result<Self, String>`
+
+Crée une nouvelle instance du contrôleur ST3215.
+
+**Paramètres:**
+- `device`: Chemin du port série
+
+**Retour:** `Result<ST3215, String>`
+
+**Exemples:**
 
 ```rust
 // Windows
-let servo = ST3215::new("COMx")?;
+let controller = ST3215::new("COM3")?;
 
 // Linux
-let servo = ST3215::new("/dev/ttyUSBx")?;
-let servo = ST3215::new("/dev/ttyACMx")?;
+let controller = ST3215::new("/dev/ttyUSB0")?;
+let controller = ST3215::new("/dev/ttyACM0")?;
 
 // MacOS
-let servo = ST3215::new("/dev/cu.usbserial...")?;
-let servo = ST3215::new("/dev/tty.usbserial...")?;
+let controller = ST3215::new("/dev/cu.usbserial-1234")?;
 ```
 
-### Détection des servos
+---
+
+## Détection et connexion
+
+### `ping_servo(sts_id: u8) -> bool`
+
+Vérifie si un servo est présent et répond.
+
+**Paramètres:**
+- `sts_id`: ID du servo (0-253)
+
+**Retour:** `true` si le servo répond, `false` sinon
+
+**Exemple:**
 
 ```rust
-// Scanner tous les servos
-let ids = servo.list_servos();
-
-// Vérifier un servo spécifique
-let exists = servo.ping_servo(1);
-```
-
-### Contrôle de position
-
-```rust
-// Déplacer vers une position
-servo.move_to(id, position, speed, acceleration, wait);
-
-// Lire la position actuelle
-if let Some(pos) = servo.read_position(id) {
-    println!("Position: {}", pos);
+if controller.ping_servo(1) {
+    println!("Servo 1 est connecté");
 }
 ```
 
-### Contrôle de vitesse
+### `list_servos() -> Vec<u8>`
+
+Scanne tous les IDs possibles (0-253) et retourne la liste des servos trouvés.
+
+**Retour:** Vecteur contenant les IDs des servos détectés
+
+**Exemple:**
 
 ```rust
-// Rotation continue
-servo.rotate(id, 500)?;   // Rotation clockwise
-servo.rotate(id, -500)?;  // Rotation counter-clockwise
-
-// Configurer la vitesse
-servo.set_speed(id, 2400);
+let servos = controller.list_servos();
+println!("Servos trouvés: {:?}", servos);
+// Output: Servos trouvés: [1, 2, 5, 8]
 ```
 
-### Lecture des capteurs
+---
+
+## Contrôle du torque
+
+### `enable_torque(sts_id: u8) -> Result<(), String>`
+
+Active le torque du servo. Le servo maintiendra sa position et pourra être contrôlé.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Result<(), String>`
+
+**Exemple:**
 
 ```rust
-// Tension
-if let Some(voltage) = servo.read_voltage(id) {
+controller.enable_torque(1)?;
+println!("Torque activé");
+```
+
+### `disable_torque(sts_id: u8) -> Result<(), String>`
+
+Désactive le torque du servo. Le servo peut être déplacé manuellement.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Result<(), String>`
+
+**Exemple:**
+
+```rust
+controller.disable_torque(1)?;
+println!("Le servo peut être déplacé manuellement");
+```
+
+---
+
+## Contrôle de position
+
+### `move_to(sts_id: u8, position: u16, speed: u16, acc: u8, wait: bool) -> Option<bool>`
+
+Déplace le servo vers une position cible avec vitesse et accélération spécifiées.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+- `position`: Position cible (0-4095)
+- `speed`: Vitesse de déplacement en step/s (0-3400)
+- `acc`: Accélération en 100 step/s² (0-254)
+- `wait`: Si `true`, bloque jusqu'à ce que la position soit atteinte
+
+**Retour:** `Some(true)` en cas de succès, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+// Déplacement rapide sans attente
+controller.move_to(1, 2048, 2400, 50, false);
+
+// Déplacement lent avec attente
+controller.move_to(1, 1024, 500, 20, true);
+println!("Position atteinte!");
+```
+
+### `write_position(sts_id: u8, position: u16) -> Option<bool>`
+
+Écrit directement une position cible sans modifier vitesse/accélération.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+- `position`: Position cible (0-4095)
+
+**Retour:** `Some(true)` en cas de succès, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+controller.set_speed(1, 2000);
+controller.set_acceleration(1, 50);
+controller.write_position(1, 2048);
+```
+
+### `read_position(sts_id: u8) -> Option<u16>`
+
+Lit la position actuelle du servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(position)` si réussi, `None` sinon
+
+**Exemple:**
+
+```rust
+if let Some(pos) = controller.read_position(1) {
+    println!("Position actuelle: {}", pos);
+}
+```
+
+### `is_moving(sts_id: u8) -> Option<bool>`
+
+Vérifie si le servo est en mouvement.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(true)` si en mouvement, `Some(false)` si arrêté, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+controller.move_to(1, 3000, 1500, 50, false);
+
+while controller.is_moving(1) == Some(true) {
+    println!("En mouvement...");
+    std::thread::sleep(std::time::Duration::from_millis(100));
+}
+println!("Position atteinte!");
+```
+
+---
+
+## Contrôle de vitesse
+
+### `rotate(sts_id: u8, speed: i16) -> Result<(), String>`
+
+Active le mode rotation continue avec une vitesse spécifiée.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+- `speed`: Vitesse de rotation en step/s (-3400 à +3400)
+  - Positif: rotation horaire
+  - Négatif: rotation anti-horaire
+
+**Retour:** `Result<(), String>`
+
+**Exemple:**
+
+```rust
+// Rotation horaire à 500 step/s
+controller.rotate(1, 500)?;
+
+// Rotation anti-horaire à 1000 step/s
+controller.rotate(1, -1000)?;
+
+// Arrêter
+controller.disable_torque(1)?;
+```
+
+### `set_speed(sts_id: u8, speed: u16) -> Option<bool>`
+
+Configure la vitesse pour les déplacements en mode position.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+- `speed`: Vitesse en step/s (0-3400)
+
+**Retour:** `Some(true)` en cas de succès, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+controller.set_speed(1, 2400);
+```
+
+### `read_speed(sts_id: u8) -> Option<i16>`
+
+Lit la vitesse actuelle du servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(speed)` si réussi, `None` sinon. La vitesse peut être négative.
+
+**Exemple:**
+
+```rust
+if let Some(speed) = controller.read_speed(1) {
+    println!("Vitesse actuelle: {} step/s", speed);
+}
+```
+
+### `set_acceleration(sts_id: u8, acc: u8) -> Option<bool>`
+
+Configure l'accélération du servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+- `acc`: Accélération (0-254), unité: 100 step/s²
+
+**Retour:** `Some(true)` en cas de succès, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+// Accélération rapide (5000 step/s²)
+controller.set_acceleration(1, 50);
+
+// Accélération lente (1000 step/s²)
+controller.set_acceleration(1, 10);
+```
+
+### `read_acceleration(sts_id: u8) -> Option<u8>`
+
+Lit la valeur d'accélération configurée.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(acc)` si réussi, `None` sinon
+
+**Exemple:**
+
+```rust
+if let Some(acc) = controller.read_acceleration(1) {
+    println!("Accélération: {} (× 100 step/s²)", acc);
+}
+```
+
+---
+
+## Lecture des capteurs
+
+### `read_voltage(sts_id: u8) -> Option<f32>`
+
+Lit la tension d'alimentation du servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(voltage)` en volts, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+if let Some(voltage) = controller.read_voltage(1) {
     println!("Tension: {:.1} V", voltage);
+    
+    if voltage < 6.0 {
+        println!("Attention: Tension faible!");
+    }
 }
+```
 
-// Température
-if let Some(temp) = servo.read_temperature(id) {
-    println!("Température: {} °C", temp);
-}
+### `read_current(sts_id: u8) -> Option<f32>`
 
-// Courant
-if let Some(current) = servo.read_current(id) {
+Lit le courant consommé par le servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(current)` en milliampères, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+if let Some(current) = controller.read_current(1) {
     println!("Courant: {:.1} mA", current);
 }
+```
 
-// Charge
-if let Some(load) = servo.read_load(id) {
+### `read_temperature(sts_id: u8) -> Option<u8>`
+
+Lit la température interne du servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(temperature)` en degrés Celsius, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+if let Some(temp) = controller.read_temperature(1) {
+    println!("Température: {} °C", temp);
+    
+    if temp > 70 {
+        println!("Attention: Température élevée!");
+        controller.disable_torque(1)?;
+    }
+}
+```
+
+### `read_load(sts_id: u8) -> Option<f32>`
+
+Lit la charge actuelle sur le servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(load)` en pourcentage, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+if let Some(load) = controller.read_load(1) {
     println!("Charge: {:.1}%", load);
 }
 ```
 
-### Configuration
+### `read_status(sts_id: u8) -> Option<HashMap<String, bool>>`
+
+Lit l'état de tous les capteurs du servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `HashMap` avec les états des capteurs (`true` = OK, `false` = Erreur)
+- `"Voltage"`: État de la tension
+- `"Sensor"`: État du capteur
+- `"Temperature"`: État de la température
+- `"Current"`: État du courant
+- `"Angle"`: État de l'angle
+- `"Overload"`: État de surcharge
+
+**Exemple:**
 
 ```rust
-// Changer l'ID
-servo.change_id(1, 5)?;
-
-// Configurer le mode (0=Position, 1=Vitesse, 2=PWM, 3=Pas à pas)
-servo.set_mode(id, 0)?;
-
-// Configurer l'accélération
-servo.set_acceleration(id, 50);
-
-// Correction de position
-servo.correct_position(id, 100)?;
+if let Some(status) = controller.read_status(1) {
+    for (sensor, ok) in status {
+        let icon = if ok { "OK" } else { "ERR" };
+        println!("[{}] {}: {}", icon, sensor, if ok { "OK" } else { "ERROR" });
+    }
+}
 ```
 
-### Étalonnage
+---
+
+## Configuration avancée
+
+### `set_mode(sts_id: u8, mode: u8) -> Result<(), String>`
+
+Change le mode opérationnel du servo.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+- `mode`: Mode à activer
+  - `0`: Mode position (contrôle de position précis)
+  - `1`: Mode vitesse constante (rotation continue)
+  - `2`: Mode PWM (contrôle direct du PWM)
+  - `3`: Mode pas-à-pas (contrôle stepper)
+
+**Retour:** `Result<(), String>`
+
+**Exemple:**
 
 ```rust
-// Étalonner un servo (trouver min/max)
-let (min, max) = servo.tare_servo(id);
-println!("Min: {:?}, Max: {:?}", min, max);
+// Mode position (par défaut)
+controller.set_mode(1, 0)?;
+
+// Mode rotation continue
+controller.set_mode(1, 1)?;
 ```
 
+### `read_mode(sts_id: u8) -> Option<u8>`
 
-## Dépendances
+Lit le mode actuel du servo.
 
-- `serialport` (4.3) - Communication série
-- `thiserror` (1.0) - Gestion des erreurs
+**Paramètres:**
+- `sts_id`: ID du servo
 
-## Registres ST3215
+**Retour:** `Some(mode)` si réussi, `None` sinon
 
-### EEPROM (lecture seule)
-- `STS_MODEL_L/H` (3-4) : Numéro de modèle
+**Exemple:**
 
-### EEPROM (lecture/écriture)
-- `STS_ID` (5) : ID du servo
-- `STS_BAUD_RATE` (6) : Vitesse de communication
-- `STS_MODE` (33) : Mode opérationnel
+```rust
+if let Some(mode) = controller.read_mode(1) {
+    let mode_name = match mode {
+        0 => "Position",
+        1 => "Vitesse",
+        2 => "PWM",
+        3 => "Pas-à-pas",
+        _ => "Inconnu",
+    };
+    println!("Mode actuel: {}", mode_name);
+}
+```
 
-### SRAM (lecture/écriture)
-- `STS_TORQUE_ENABLE` (40) : Activation du couple
-- `STS_ACC` (41) : Accélération
-- `STS_GOAL_POSITION_L/H` (42-43) : Position cible
-- `STS_GOAL_SPEED_L/H` (46-47) : Vitesse cible
+### `correct_position(sts_id: u8, correction: i16) -> Result<(), String>`
 
-### SRAM (lecture seule)
-- `STS_PRESENT_POSITION_L/H` (56-57) : Position actuelle
-- `STS_PRESENT_SPEED_L/H` (58-59) : Vitesse actuelle
-- `STS_PRESENT_VOLTAGE` (62) : Tension actuelle
-- `STS_PRESENT_TEMPERATURE` (63) : Température actuelle
-- `STS_MOVING` (66) : Statut de mouvement
-- `STS_PRESENT_CURRENT_L/H` (69-70) : Courant actuel
+Applique une correction de position (offset).
 
-## Modes opérationnels
+**Paramètres:**
+- `sts_id`: ID du servo
+- `correction`: Valeur de correction en steps (-2047 à +2047)
 
-- **Mode 0** : Position - Contrôle de position précis
-- **Mode 1** : Vitesse constante - Rotation continue
-- **Mode 2** : PWM - Contrôle direct du PWM
-- **Mode 3** : Pas à pas - Contrôle en mode stepper
+**Retour:** `Result<(), String>`
 
-## Notes importantes
+**Exemple:**
 
-1. Le port série doit être accessible (droits appropriés sous Linux/macOS)
-2. La vitesse de communication par défaut est 1 000 000 bauds
-3. Les positions valides vont de 0 à 4095
-4. La fonction `tare_servo()` ne doit être utilisée que sur des servos avec positions bloquantes
+```rust
+// Ajouter un offset de +100 steps
+controller.correct_position(1, 100)?;
+
+// Soustraire 50 steps
+controller.correct_position(1, -50)?;
+
+// Réinitialiser
+controller.correct_position(1, 0)?;
+```
+
+### `read_correction(sts_id: u8) -> Option<i16>`
+
+Lit la correction de position actuelle.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(correction)` si réussi, `None` sinon
+
+**Exemple:**
+
+```rust
+if let Some(corr) = controller.read_correction(1) {
+    println!("Correction actuelle: {} steps", corr);
+}
+```
+
+### `change_id(sts_id: u8, new_id: u8) -> Result<(), String>`
+
+Change l'ID d'un servo.
+
+**Paramètres:**
+- `sts_id`: ID actuel du servo
+- `new_id`: Nouvel ID (0-253)
+
+**Retour:** `Result<(), String>`
+
+**Attention:** Cette opération modifie l'EEPROM du servo.
+
+**Exemple:**
+
+```rust
+// Changer l'ID de 1 à 5
+controller.change_id(1, 5)?;
+println!("ID changé: le servo répond maintenant à l'ID 5");
+
+// Vérification
+if controller.ping_servo(5) {
+    println!("Nouveau ID confirmé");
+}
+```
+
+### `lock_eprom(sts_id: u8) -> CommResult`
+
+Verrouille l'EEPROM du servo pour éviter les modifications accidentelles.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `CommResult`
+
+**Exemple:**
+
+```rust
+controller.lock_eprom(1);
+```
+
+### `unlock_eprom(sts_id: u8) -> CommResult`
+
+Déverrouille l'EEPROM du servo pour permettre les modifications.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `CommResult`
+
+**Exemple:**
+
+```rust
+controller.unlock_eprom(1);
+controller.change_id(1, 5)?;
+controller.lock_eprom(5);
+```
+
+---
+
+## Étalonnage
+
+### `tare_servo(sts_id: u8) -> (Option<u16>, Option<u16>)`
+
+Étalonne automatiquement un servo en trouvant ses positions min et max.
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** Tuple `(min_position, max_position)`
+
+**Important:** 
+- Ne fonctionne que sur des servos avec butées mécaniques
+- Le servo va effectuer une rotation complète
+- Assurez-vous qu'il n'y a pas d'obstacles
+
+**Exemple:**
+
+```rust
+println!("Démarrage de l'étalonnage...");
+let (min, max) = controller.tare_servo(1);
+
+match (min, max) {
+    (Some(min_pos), Some(max_pos)) => {
+        println!("Étalonnage réussi!");
+        println!("  Position min: {}", min_pos);
+        println!("  Position max: {}", max_pos);
+        println!("  Course totale: {} steps", max_pos - min_pos);
+    }
+    _ => println!("Échec de l'étalonnage"),
+}
+```
+
+### `define_middle(sts_id: u8) -> Option<bool>`
+
+Définit la position actuelle comme position 2048 (milieu).
+
+**Paramètres:**
+- `sts_id`: ID du servo
+
+**Retour:** `Some(true)` en cas de succès, `None` en cas d'erreur
+
+**Exemple:**
+
+```rust
+// Placer manuellement le servo à la position souhaitée
+controller.disable_torque(1)?;
+println!("Placez le servo à la position centrale...");
+std::thread::sleep(std::time::Duration::from_secs(5));
+
+// Définir cette position comme 2048
+controller.define_middle(1);
+controller.enable_torque(1)?;
+```
+
+---
+
+## Exemples
+
+### Exemple 1: Scanner et lister les servos
+
+```rust
+use st3215::ST3215;
+
+fn main() -> Result<(), String> {
+    let controller = ST3215::new("/dev/ttyUSB0")?;
+    
+    println!("Scan des servos...");
+    let servos = controller.list_servos();
+    
+    println!("\n{} servo(s) trouvé(s):", servos.len());
+    for id in servos {
+        println!("  - Servo ID: {}", id);
+    }
+    
+    Ok(())
+}
+```
+
+### Exemple 2: Contrôle simple de position
+
+```rust
+use st3215::ST3215;
+
+fn main() -> Result<(), String> {
+    let controller = ST3215::new("/dev/ttyUSB0")?;
+    let servo_id = 1;
+    
+    // Activer le torque
+    controller.enable_torque(servo_id)?;
+    
+    // Déplacer vers différentes positions
+    let positions = [1024, 2048, 3072, 2048];
+    
+    for &pos in &positions {
+        println!("Déplacement vers {}", pos);
+        controller.move_to(servo_id, pos, 2000, 50, true);
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+    
+    // Désactiver le torque
+    controller.disable_torque(servo_id)?;
+    
+    Ok(())
+}
+```
+
+### Exemple 3: Surveillance des capteurs
+
+```rust
+use st3215::ST3215;
+use std::time::Duration;
+use std::thread;
+
+fn main() -> Result<(), String> {
+    let controller = ST3215::new("/dev/ttyUSB0")?;
+    let servo_id = 1;
+    
+    controller.enable_torque(servo_id)?;
+    
+    // Monitoring en boucle
+    for _ in 0..10 {
+        println!("\n--- État du servo {} ---", servo_id);
+        
+        if let Some(pos) = controller.read_position(servo_id) {
+            println!("Position: {}", pos);
+        }
+        
+        if let Some(voltage) = controller.read_voltage(servo_id) {
+            println!("Tension: {:.1} V", voltage);
+        }
+        
+        if let Some(current) = controller.read_current(servo_id) {
+            println!("Courant: {:.1} mA", current);
+        }
+        
+        if let Some(temp) = controller.read_temperature(servo_id) {
+            println!("Température: {} °C", temp);
+        }
+        
+        if let Some(load) = controller.read_load(servo_id) {
+            println!("Charge: {:.1}%", load);
+        }
+        
+        thread::sleep(Duration::from_secs(1));
+    }
+    
+    Ok(())
+}
+```
+
+### Exemple 4: Rotation continue
+
+```rust
+use st3215::ST3215;
+use std::time::Duration;
+use std::thread;
+
+fn main() -> Result<(), String> {
+    let controller = ST3215::new("/dev/ttyUSB0")?;
+    let servo_id = 1;
+    
+    // Rotation horaire pendant 3 secondes
+    println!("Rotation horaire...");
+    controller.rotate(servo_id, 500)?;
+    thread::sleep(Duration::from_secs(3));
+    
+    // Rotation anti-horaire pendant 3 secondes
+    println!("Rotation anti-horaire...");
+    controller.rotate(servo_id, -500)?;
+    thread::sleep(Duration::from_secs(3));
+    
+    // Arrêt
+    println!("Arrêt...");
+    controller.disable_torque(servo_id)?;
+    
+    Ok(())
+}
+```
+
+### Exemple 5: Contrôle multi-servos
+
+```rust
+use st3215::ST3215;
+
+fn main() -> Result<(), String> {
+    let controller = ST3215::new("/dev/ttyUSB0")?;
+    
+    let servos = controller.list_servos();
+    println!("Contrôle de {} servos", servos.len());
+    
+    // Activer tous les servos
+    for &id in &servos {
+        controller.enable_torque(id)?;
+    }
+    
+    // Déplacer tous les servos vers la position centrale
+    for &id in &servos {
+        controller.move_to(id, 2048, 2000, 50, false);
+    }
+    
+    // Attendre que tous soient en position
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    
+    // Lire les positions finales
+    for &id in &servos {
+        if let Some(pos) = controller.read_position(id) {
+            println!("Servo {}: position = {}", id, pos);
+        }
+    }
+    
+    Ok(())
+}
+```
+
+---
+
+## Compilation et exécution
+
+### Compilation
+
+```bash
+# Mode debug
+cargo build
+
+# Mode release (optimisé)
+cargo build --release
+```
+
+### Exécuter les exemples
+
+```bash
+# Exemple basique
+cargo run --example basic --release
+
+# Exemple de contrôle du torque
+cargo run --example torque_control --release
+
+# Programme principal
+cargo run --release
+```
+
+### Tests
+
+```bash
+cargo test
+```
+
+---
+
+## Utilisation depuis C/C++
+
+Cette bibliothèque peut être utilisée depuis C/C++ via les bindings FFI.
+
+Voir la documentation complète: [CPP_INTEROP.md](docs/CPP_INTEROP.md)
+
+### Exemple C++
+
+```cpp
+#include "st3215.h"
+
+int main() {
+    // Créer le contrôleur
+    ST3215Handle* controller = st3215_new("/dev/ttyUSB0");
+    
+    // Activer le torque
+    st3215_enable_torque(controller, 1, 1);
+    
+    // Déplacer le servo
+    st3215_move_to(controller, 1, 2048, 2400, 50, 0);
+    
+    // Libérer les ressources
+    st3215_free(controller);
+    
+    return 0;
+}
+```
+
+---
+
+## Spécifications techniques
+
+### Limites du servo ST3215
+
+| Paramètre | Valeur min | Valeur max | Unité |
+|-----------|------------|------------|-------|
+| Position | 0 | 4095 | steps |
+| Vitesse | 0 | 3400 | step/s |
+| Accélération | 0 | 254 | × 100 step/s² |
+| Tension | 6.0 | 8.4 | V |
+| Température | -5 | 75 | °C |
+| ID | 0 | 253 | - |
+
+### Registres de la mémoire
+
+#### EEPROM (lecture seule)
+- `STS_MODEL_L/H` (3-4): Numéro de modèle
+
+#### EEPROM (lecture/écriture) - Persistant
+- `STS_ID` (5): ID du servo
+- `STS_BAUD_RATE` (6): Vitesse de communication
+- `STS_MIN_ANGLE_LIMIT_L/H` (9-10): Limite min d'angle
+- `STS_MAX_ANGLE_LIMIT_L/H` (11-12): Limite max d'angle
+- `STS_OFS_L/H` (31-32): Offset de position
+- `STS_MODE` (33): Mode opérationnel
+
+#### SRAM (lecture/écriture) - Volatile
+- `STS_TORQUE_ENABLE` (40): Activation du couple
+- `STS_ACC` (41): Accélération
+- `STS_GOAL_POSITION_L/H` (42-43): Position cible
+- `STS_GOAL_TIME_L/H` (44-45): Temps pour atteindre la position
+- `STS_GOAL_SPEED_L/H` (46-47): Vitesse cible
+- `STS_LOCK` (55): Verrouillage EEPROM
+
+#### SRAM (lecture seule) - État actuel
+- `STS_PRESENT_POSITION_L/H` (56-57): Position actuelle
+- `STS_PRESENT_SPEED_L/H` (58-59): Vitesse actuelle
+- `STS_PRESENT_LOAD_L/H` (60-61): Charge actuelle
+- `STS_PRESENT_VOLTAGE` (62): Tension actuelle
+- `STS_PRESENT_TEMPERATURE` (63): Température actuelle
+- `STS_STATUS` (65): Bits d'état des capteurs
+- `STS_MOVING` (66): Statut de mouvement
+- `STS_PRESENT_CURRENT_L/H` (69-70): Courant actuel
+
+### Modes opérationnels
+
+| Mode | Valeur | Description |
+|------|--------|-------------|
+| Position | 0 | Contrôle de position précis (0-4095) |
+| Vitesse | 1 | Rotation continue à vitesse constante |
+| PWM | 2 | Contrôle direct du signal PWM |
+| Stepper | 3 | Mode pas-à-pas |
+
+---
 
 ## Débogage
 
-Pour activer les logs de débogage :
+### Activer les logs
 
 ```bash
+# Logs de base
+RUST_LOG=info cargo run
+
+# Logs détaillés
 RUST_LOG=debug cargo run
+
+# Logs très détaillés
+RUST_LOG=trace cargo run
 ```
 
+### Problèmes courants
+
+#### "Permission denied" sous Linux
+
+```bash
+# Ajouter l'utilisateur au groupe dialout
+sudo usermod -a -G dialout $USER
+
+# Ou donner les permissions au port
+sudo chmod 666 /dev/ttyUSB0
+```
+
+#### Le servo ne répond pas
+
+1. Vérifier la connexion physique
+2. Vérifier le câblage (TX/RX, alimentation)
+3. Vérifier le baudrate (par défaut: 1000000)
+4. Tester avec `ping_servo()`
+
+#### Position incorrecte
+
+1. Vérifier la correction de position: `read_correction()`
+2. Réinitialiser la correction: `correct_position(id, 0)`
+3. Effectuer un étalonnage: `tare_servo(id)`
+
+---
+
+## Dépendances
+
+- `serialport` (4.3) - Communication série multiplateforme
+- `thiserror` (1.0) - Gestion élégante des erreurs
+- `serde` (1.0) - Sérialisation (optionnel)
+- `serde_json` (1.0) - JSON (optionnel)
+
+---
+
 ## Licence
-MIT
 
-## Auteurs
-NotPunchnox
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
-## Liens
+---
 
-- Repository: https://github.com/Cogni-Robot/servo-controller
-- Issues: https://github.com/Cogni-Robot/servo-controller/issues
+## Auteur
+
+**NotPunchnox**
+
+---
+
+## Liens utiles
+
+- [Repository GitHub](https://github.com/Cogni-Robot/servo-controller)
+- [Issues & Bugs](https://github.com/Cogni-Robot/servo-controller/issues)
+- [Documentation C++](docs/CPP_INTEROP.md)
+- [Cogni-Robot](https://github.com/Cogni-Robot)
+
+---
+
+## Remerciements
+
+Merci à tous les contributeurs et utilisateurs de cette bibliothèque!
+
+---
+
+**Made with ❤️ and 🦀 Rust**

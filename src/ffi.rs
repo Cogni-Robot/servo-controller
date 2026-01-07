@@ -364,9 +364,9 @@ pub extern "C" fn st3215_enable_torque(
 
     let st = unsafe { &(*handle).inner };
     let result = if enable != 0 {
-        st.start_servo(servo_id)
+        st.enable_torque(servo_id)
     } else {
-        st.stop_servo(servo_id).map(|_| ()).ok_or_else(|| "Failed to stop servo".to_string())
+        st.disable_torque(servo_id)
     };
     match result {
         Ok(_) => 0,

@@ -179,28 +179,44 @@ impl ST3215 {
         }
     }
 
-    /// Arrêter le servo (Mettre le couple à 0)
-    pub fn stop_servo(&self, sts_id: u8) -> Option<bool> {
+    /// Désactiver le torque du servo (Mettre le couple à 0)
+    pub fn disable_torque(&self, sts_id: u8) -> Result<(), String> {
         let mut port = self.port_handler.lock().unwrap();
         let mut handler = ProtocolPacketHandler::new(&mut *port);
         let (comm, error) = handler.write_tx_rx(sts_id, STS_TORQUE_ENABLE, &[0]);
         if comm.is_success() && error == 0 {
-            Some(true)
+            Ok(())
         } else {
-            None
+            Err(format!("Failed to disable torque for servo {}: comm={:?}, error={}", sts_id, comm, error))
         }
     }
 
-    /// Démarrer le servo (Mettre le couple à 1)
-    pub fn start_servo(&self, sts_id: u8) -> Result<(), String> {
+    /// Activer le torque du servo (Mettre le couple à 1)
+    pub fn enable_torque(&self, sts_id: u8) -> Result<(), String> {
         let mut port = self.port_handler.lock().unwrap();
         let mut handler = ProtocolPacketHandler::new(&mut *port);
-        let (comm, _error) = handler.write_tx_rx(sts_id, STS_TORQUE_ENABLE, &[1]);
-        if comm.is_success() {
+        let (comm, error) = handler.write_tx_rx(sts_id, STS_TORQUE_ENABLE, &[1]);
+        if comm.is_success() && error == 0 {
             Ok(())
         } else {
-            Err("Failed to start servo".to_string())
+            Err(format!("Failed to enable torque for servo {}: comm={:?}, error={}", sts_id, comm, error))
         }
+    }
+
+    /// Arrêter le servo (Mettre le couple à 0)
+    /// 
+    /// **Deprecated:** Utilisez `disable_torque` à la place
+    #[deprecated(since = "0.1.0", note = "Utilisez disable_torque à la place")]
+    pub fn stop_servo(&self, sts_id: u8) -> Option<bool> {
+        self.disable_torque(sts_id).ok().map(|_| true)
+    }
+
+    /// Démarrer le servo (Mettre le couple à 1)
+    /// 
+    /// **Deprecated:** Utilisez `enable_torque` à la place
+    #[deprecated(since = "0.1.0", note = "Utilisez enable_torque à la place")]
+    pub fn start_servo(&self, sts_id: u8) -> Result<(), String> {
+        self.enable_torque(sts_id)
     }
 
     /// Configurer le mode opérationnel du servo
@@ -281,7 +297,7 @@ impl ST3215 {
             if !moving {
                 let position = self.read_position(sts_id);
                 let _ = self.set_mode(sts_id, 0);
-                let _ = self.stop_servo(sts_id);
+                let _ = self.disable_torque(sts_id);
 
                 if let Some(pos) = position {
                     stop_matches += 1;

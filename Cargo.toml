@@ -9,9 +9,10 @@ homepage = "https://github.com/Cogni-Robot/servo-controller"
 readme = "README.md"
 keywords = ["servo", "robotics", "sts3215", "feetech", "embedded"]
 categories = ["embedded", "hardware-support"]
+edition = "2021"
 
 [dependencies]
-serialport = "4.3"
+serialport = "4.8.1"
 thiserror = "2.0.17"
 
 [build-dependencies]

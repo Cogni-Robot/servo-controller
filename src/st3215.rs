@@ -42,6 +42,7 @@ impl ST3215 {
             if self.ping_servo(id) {
                 servos.push(id);
             }
+            thread::sleep(Duration::from_millis(10)); // Augmenté de 1ms à 10ms
         }
         servos
     }

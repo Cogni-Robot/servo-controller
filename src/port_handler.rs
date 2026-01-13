@@ -19,7 +19,7 @@ impl PortHandler {
             port_name: port_name.to_string(),
             baudrate: DEFAULT_BAUDRATE,
             packet_start_time: Instant::now(),
-            packet_timeout: Duration::from_millis(0),
+            packet_timeout: Duration::from_millis(100), // Augmenté de 0 à 100ms
             tx_time_per_byte: 0.0,
             is_using: false,
         }
@@ -94,17 +94,30 @@ impl PortHandler {
     }
 
     fn setup_port(&mut self) -> Result<(), String> {
-        let port = serialport::new(&self.port_name, self.baudrate)
-            .timeout(Duration::from_millis(0))
+        let mut port = serialport::new(&self.port_name, self.baudrate)
+            .timeout(Duration::from_millis(100))
             .open()
             .map_err(|e| format!("Could not open port {}: {}", self.port_name, e))?;
 
-        self.port = Some(port);
+        // Configure data bits, stop bits, parity
+        port.set_data_bits(serialport::DataBits::Eight)
+            .map_err(|e| format!("Failed to set data bits: {}", e))?;
+        
+        port.set_stop_bits(serialport::StopBits::One)
+            .map_err(|e| format!("Failed to set stop bits: {}", e))?;
+        
+        port.set_parity(serialport::Parity::None)
+            .map_err(|e| format!("Failed to set parity: {}", e))?;
+
+        // Disable flow control
+        port.set_flow_control(serialport::FlowControl::None)
+            .map_err(|e| format!("Failed to set flow control: {}", e))?;
 
         // Clear input buffer
-        if let Some(ref mut p) = self.port {
-            let _ = p.clear(serialport::ClearBuffer::Input);
-        }
+        port.clear(serialport::ClearBuffer::Input)
+            .map_err(|e| format!("Failed to clear buffer: {}", e))?;
+
+        self.port = Some(port);
 
         self.tx_time_per_byte = (1000.0 / self.baudrate as f64) * 10.0;
 

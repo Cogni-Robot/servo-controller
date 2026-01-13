@@ -81,6 +81,7 @@ fn main() -> Result<(), String> {
 Crée une nouvelle instance du contrôleur ST3215.
 
 **Paramètres:**
+
 - `device`: Chemin du port série
 
 **Retour:** `Result<ST3215, String>`
@@ -108,6 +109,7 @@ let controller = ST3215::new("/dev/cu.usbserial-1234")?;
 Vérifie si un servo est présent et répond.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo (0-253)
 
 **Retour:** `true` si le servo répond, `false` sinon
@@ -143,6 +145,7 @@ println!("Servos trouvés: {:?}", servos);
 Active le torque du servo. Le servo maintiendra sa position et pourra être contrôlé.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Result<(), String>`
@@ -159,6 +162,7 @@ println!("Torque activé");
 Désactive le torque du servo. Le servo peut être déplacé manuellement.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Result<(), String>`
@@ -179,6 +183,7 @@ println!("Le servo peut être déplacé manuellement");
 Déplace le servo vers une position cible avec vitesse et accélération spécifiées.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 - `position`: Position cible (0-4095)
 - `speed`: Vitesse de déplacement en step/s (0-3400)
@@ -203,6 +208,7 @@ println!("Position atteinte!");
 Écrit directement une position cible sans modifier vitesse/accélération.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 - `position`: Position cible (0-4095)
 
@@ -221,6 +227,7 @@ controller.write_position(1, 2048);
 Lit la position actuelle du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(position)` si réussi, `None` sinon
@@ -238,6 +245,7 @@ if let Some(pos) = controller.read_position(1) {
 Vérifie si le servo est en mouvement.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(true)` si en mouvement, `Some(false)` si arrêté, `None` en cas d'erreur
@@ -263,6 +271,7 @@ println!("Position atteinte!");
 Active le mode rotation continue avec une vitesse spécifiée.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 - `speed`: Vitesse de rotation en step/s (-3400 à +3400)
   - Positif: rotation horaire
@@ -288,6 +297,7 @@ controller.disable_torque(1)?;
 Configure la vitesse pour les déplacements en mode position.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 - `speed`: Vitesse en step/s (0-3400)
 
@@ -304,6 +314,7 @@ controller.set_speed(1, 2400);
 Lit la vitesse actuelle du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(speed)` si réussi, `None` sinon. La vitesse peut être négative.
@@ -321,6 +332,7 @@ if let Some(speed) = controller.read_speed(1) {
 Configure l'accélération du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 - `acc`: Accélération (0-254), unité: 100 step/s²
 
@@ -341,6 +353,7 @@ controller.set_acceleration(1, 10);
 Lit la valeur d'accélération configurée.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(acc)` si réussi, `None` sinon
@@ -362,6 +375,7 @@ if let Some(acc) = controller.read_acceleration(1) {
 Lit la tension d'alimentation du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(voltage)` en volts, `None` en cas d'erreur
@@ -383,6 +397,7 @@ if let Some(voltage) = controller.read_voltage(1) {
 Lit le courant consommé par le servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(current)` en milliampères, `None` en cas d'erreur
@@ -400,6 +415,7 @@ if let Some(current) = controller.read_current(1) {
 Lit la température interne du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(temperature)` en degrés Celsius, `None` en cas d'erreur
@@ -422,6 +438,7 @@ if let Some(temp) = controller.read_temperature(1) {
 Lit la charge actuelle sur le servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(load)` en pourcentage, `None` en cas d'erreur
@@ -439,9 +456,11 @@ if let Some(load) = controller.read_load(1) {
 Lit l'état de tous les capteurs du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `HashMap` avec les états des capteurs (`true` = OK, `false` = Erreur)
+
 - `"Voltage"`: État de la tension
 - `"Sensor"`: État du capteur
 - `"Temperature"`: État de la température
@@ -469,6 +488,7 @@ if let Some(status) = controller.read_status(1) {
 Change le mode opérationnel du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 - `mode`: Mode à activer
   - `0`: Mode position (contrôle de position précis)
@@ -493,6 +513,7 @@ controller.set_mode(1, 1)?;
 Lit le mode actuel du servo.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(mode)` si réussi, `None` sinon
@@ -517,6 +538,7 @@ if let Some(mode) = controller.read_mode(1) {
 Applique une correction de position (offset).
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 - `correction`: Valeur de correction en steps (-2047 à +2047)
 
@@ -540,6 +562,7 @@ controller.correct_position(1, 0)?;
 Lit la correction de position actuelle.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(correction)` si réussi, `None` sinon
@@ -557,6 +580,7 @@ if let Some(corr) = controller.read_correction(1) {
 Change l'ID d'un servo.
 
 **Paramètres:**
+
 - `sts_id`: ID actuel du servo
 - `new_id`: Nouvel ID (0-253)
 
@@ -582,6 +606,7 @@ if controller.ping_servo(5) {
 Verrouille l'EEPROM du servo pour éviter les modifications accidentelles.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `CommResult`
@@ -597,6 +622,7 @@ controller.lock_eprom(1);
 Déverrouille l'EEPROM du servo pour permettre les modifications.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `CommResult`
@@ -618,11 +644,13 @@ controller.lock_eprom(5);
 Étalonne automatiquement un servo en trouvant ses positions min et max.
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** Tuple `(min_position, max_position)`
 
-**Important:** 
+**Important:**
+
 - Ne fonctionne que sur des servos avec butées mécaniques
 - Le servo va effectuer une rotation complète
 - Assurez-vous qu'il n'y a pas d'obstacles
@@ -649,6 +677,7 @@ match (min, max) {
 Définit la position actuelle comme position 2048 (milieu).
 
 **Paramètres:**
+
 - `sts_id`: ID du servo
 
 **Retour:** `Some(true)` en cas de succès, `None` en cas d'erreur
@@ -907,9 +936,11 @@ int main() {
 ### Registres de la mémoire
 
 #### EEPROM (lecture seule)
+
 - `STS_MODEL_L/H` (3-4): Numéro de modèle
 
 #### EEPROM (lecture/écriture) - Persistant
+
 - `STS_ID` (5): ID du servo
 - `STS_BAUD_RATE` (6): Vitesse de communication
 - `STS_MIN_ANGLE_LIMIT_L/H` (9-10): Limite min d'angle
@@ -918,6 +949,7 @@ int main() {
 - `STS_MODE` (33): Mode opérationnel
 
 #### SRAM (lecture/écriture) - Volatile
+
 - `STS_TORQUE_ENABLE` (40): Activation du couple
 - `STS_ACC` (41): Accélération
 - `STS_GOAL_POSITION_L/H` (42-43): Position cible
@@ -926,6 +958,7 @@ int main() {
 - `STS_LOCK` (55): Verrouillage EEPROM
 
 #### SRAM (lecture seule) - État actuel
+
 - `STS_PRESENT_POSITION_L/H` (56-57): Position actuelle
 - `STS_PRESENT_SPEED_L/H` (58-59): Vitesse actuelle
 - `STS_PRESENT_LOAD_L/H` (60-61): Charge actuelle
@@ -1025,3 +1058,4 @@ Merci à tous les contributeurs et utilisateurs de cette bibliothèque!
 ---
 
 **Made with ❤️ and 🦀 Rust**
+

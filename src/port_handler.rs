@@ -19,7 +19,7 @@ impl PortHandler {
             port_name: port_name.to_string(),
             baudrate: DEFAULT_BAUDRATE,
             packet_start_time: Instant::now(),
-            packet_timeout: Duration::from_millis(100), // Augmenté de 0 à 100ms
+            packet_timeout: Duration::from_millis(100), //ms
             tx_time_per_byte: 0.0,
             is_using: false,
         }

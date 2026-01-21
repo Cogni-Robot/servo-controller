@@ -38,12 +38,19 @@ impl ST3215 {
     /// Scanner le bus pour déterminer tous les servos présents
     pub fn list_servos(&self) -> Vec<u8> {
         let mut servos = Vec::new();
+        // let mut servo_scanned = 0;
+
         for id in 0..254 {
+            // servo_scanned += 1;
+            // println!("Scan du servo {}/254 (ID {})", servo_scanned, id);
             if self.ping_servo(id) {
+                println!("Servo trouvé avec l'ID {}", id);
                 servos.push(id);
             }
-            thread::sleep(Duration::from_millis(10)); // Augmenté de 1ms à 10ms
         }
+
+        servos.sort();
+        println!("Scan terminé. {} servo(s) trouvé(s)", servos.len());
         servos
     }
 
